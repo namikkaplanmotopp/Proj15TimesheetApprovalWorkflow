@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from db.models import DbTimesheetEntry, DbUser, DbProject, DbTimesheet
 from schemas import TimesheetEntryCreate, TimesheetEntryUpdate
-from enums import UserRole, TimesheetStatus
+from enums import TimesheetStatus
 from datetime import date
 
 

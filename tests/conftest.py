@@ -5,9 +5,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from db.database import Base, get_db
 from main import app
-from db.models import DbUser, DbProject, DbTimesheetEntry
+from db.models import DbUser, DbProject, DbTimesheetEntry, DbTimesheet
 from auth.hash import hash_password
-from enums import UserRole
+from enums import UserRole, TimesheetStatus
 
 # In-memory test database with StaticPool
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -43,6 +43,7 @@ def cleanup_after_test():
     try:
         # Delete all entries first (foreign keys)
         db.query(DbTimesheetEntry).delete()
+        db.query(DbTimesheet).delete()
         db.query(DbProject).delete()
         db.query(DbUser).delete()
         db.commit()
@@ -114,6 +115,21 @@ def test_project(db_session):
     db_session.commit()
     db_session.refresh(project)
     return project
+
+
+@pytest.fixture
+def test_timesheet(db_session, test_employee):
+    """Create a draft timesheet for the test employee"""
+    timesheet = DbTimesheet(
+        employee_id=test_employee.id,
+        week_number=6,
+        year=2026,
+        status=TimesheetStatus.DRAFT
+    )
+    db_session.add(timesheet)
+    db_session.commit()
+    db_session.refresh(timesheet)
+    return timesheet
 
 
 @pytest.fixture

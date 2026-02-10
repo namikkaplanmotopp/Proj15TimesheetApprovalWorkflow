@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from db.database import get_db
-from db.models import DbUser, DbProject, DbTimesheetEntry
+from db.models import DbUser, DbProject, DbTimesheetEntry, DbTimesheet
 from auth.hash import hash_password
-from enums import UserRole
+from enums import UserRole, TimesheetStatus
 from datetime import date, timedelta
 
 router = APIRouter(
@@ -25,6 +25,7 @@ def seed_database(db: Session = Depends(get_db)):
     """
     # Clear existing data
     db.query(DbTimesheetEntry).delete()
+    db.query(DbTimesheet).delete()
     db.query(DbUser).delete()
     db.query(DbProject).delete()
     
@@ -114,9 +115,24 @@ def seed_database(db: Session = Depends(get_db)):
     db.refresh(project2)
     db.refresh(project3)
     
-    # Create sample timesheet entries for current week
+    # Create sample timesheets for current week
     today = date.today()
     start_of_week = today - timedelta(days=today.weekday())  # Monday
+    iso_calendar = today.isocalendar()
+    week_number = iso_calendar[1]
+    year = iso_calendar[0]
+    
+    timesheet1 = DbTimesheet(employee_id=employee1.id, week_number=week_number, year=year, status=TimesheetStatus.DRAFT)
+    timesheet2 = DbTimesheet(employee_id=employee2.id, week_number=week_number, year=year, status=TimesheetStatus.DRAFT)
+    timesheet3 = DbTimesheet(employee_id=employee3.id, week_number=week_number, year=year, status=TimesheetStatus.DRAFT)
+    timesheet4 = DbTimesheet(employee_id=employee4.id, week_number=week_number, year=year, status=TimesheetStatus.DRAFT)
+    
+    db.add_all([timesheet1, timesheet2, timesheet3, timesheet4])
+    db.commit()
+    db.refresh(timesheet1)
+    db.refresh(timesheet2)
+    db.refresh(timesheet3)
+    db.refresh(timesheet4)
     
     entries = []
     
@@ -125,6 +141,7 @@ def seed_database(db: Session = Depends(get_db)):
         entry_date = start_of_week + timedelta(days=day)
         entries.append(DbTimesheetEntry(
             employee_id=employee1.id,
+            timesheet_id=timesheet1.id,
             project_id=project1.id,
             date=entry_date,
             hours=8.0,
@@ -136,6 +153,7 @@ def seed_database(db: Session = Depends(get_db)):
         entry_date = start_of_week + timedelta(days=day)
         entries.append(DbTimesheetEntry(
             employee_id=employee2.id,
+            timesheet_id=timesheet2.id,
             project_id=project2.id,
             date=entry_date,
             hours=7.5,
@@ -147,6 +165,7 @@ def seed_database(db: Session = Depends(get_db)):
         entry_date = start_of_week + timedelta(days=day)
         entries.append(DbTimesheetEntry(
             employee_id=employee3.id,
+            timesheet_id=timesheet3.id,
             project_id=project3.id,
             date=entry_date,
             hours=8.0,
@@ -156,6 +175,7 @@ def seed_database(db: Session = Depends(get_db)):
     # Frank's entries (employee4) - mixed projects
     entries.append(DbTimesheetEntry(
         employee_id=employee4.id,
+        timesheet_id=timesheet4.id,
         project_id=project1.id,
         date=start_of_week,
         hours=4.0,
@@ -163,6 +183,7 @@ def seed_database(db: Session = Depends(get_db)):
     ))
     entries.append(DbTimesheetEntry(
         employee_id=employee4.id,
+        timesheet_id=timesheet4.id,
         project_id=project3.id,
         date=start_of_week,
         hours=4.0,
